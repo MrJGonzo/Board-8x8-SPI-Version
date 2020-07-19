@@ -1,0 +1,4 @@
+{
+    "arduino.defaultBaudRate": 9600,
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc"
+}
