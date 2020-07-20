@@ -25,10 +25,15 @@ const byte _74HC165_01 = 7;  // LATCH-- Entrada carga en paralelo. Conecta el pi
 * La conexion en serie de multiples 74LS165 se hace del pin 10 del primer Chip al pin 9 del siguiente Chip sucesivamente.
 */
  
-//Asignacion de pines del 74HC595 que controla la funcion general de escritura - DATA OUTPUT
-const byte _74HC595_14 = 2; // DATAPIN-- Salida serial. Conecta el pin 2 de Arduino con el pin 14 del 74HC595
-const byte _74HC595_12 = 3; // LATCHPIN-- Seguro del pulso de salida. Conecta el pin 3 de Arduino con el pin 12 del 74HC595
-const byte _74HC595_11 = 4; // CLOCKPIN-- Pulso del reloj. Conecta el pin 4 del Arduino con el pin 11 del 74HC595
+//Asignacion de pines del 74HC595 que controla la funcion general de escritura - DATA OUTPUT FILA 0
+const byte A_74HC595_14 = 2; // DATAPIN-- Salida serial. Conecta el pin 2 de Arduino con el pin 14 del 74HC595
+const byte A_74HC595_12 = 3; // LATCHPIN-- Seguro del pulso de salida. Conecta el pin 3 de Arduino con el pin 12 del 74HC595
+const byte A_74HC595_11 = 4; // CLOCKPIN-- Pulso del reloj. Conecta el pin 4 del Arduino con el pin 11 del 74HC595
+
+//Asignacion de pines del 74HC595 que controla la funcion general de escritura - DATA OUTPUT FILA 1
+const byte B_74HC595_14 = 8; // DATAPIN-- Salida serial. Conecta el pin 2 de Arduino con el pin 14 del 74HC595
+const byte B_74HC595_12 = 9; // LATCHPIN-- Seguro del pulso de salida. Conecta el pin 3 de Arduino con el pin 12 del 74HC595
+const byte B_74HC595_11 = 10; // CLOCKPIN-- Pulso del reloj. Conecta el pin 4 del Arduino con el pin 11 del 74HC595
 
 /*
 ******************************************** Variables globales ********************************************
@@ -64,7 +69,7 @@ byte state [rows] = { B00000000,
                       B00000000,
                       B00000000 };
 
-byte input_A = B00000000;
+byte input_A;
 /*
 ******************************************** Funciones ********************************************
 */
@@ -77,29 +82,60 @@ void readState( ){
 
   SPI.setBitOrder(LSBFIRST);
 
-  /*for(int i = 0; i<rows; i++){
-    
-    input[i] = SPI.transfer(0);
+  for(byte i = 0; i < 8; i++){
+
+    input[i] = SPI.transfer(10);
+    Serial.println("SPI.transfer : ");
+    input_A = input[i];
+    Serial.println(input_A);
+    Serial.print(" INPUT ARRAY 0:");
+    Serial.println(byte(input[0]));
+    Serial.print(" INPUT ARRAY 1:");
+    Serial.println(input[1]);
+    Serial.print(" INPUT ARRAY 2:");
+    Serial.println(input[2]);
+    Serial.print(" INPUT ARRAY 3:");
+    Serial.println(input[3]);
+    Serial.print(" INPUT ARRAY 4:");
+    Serial.println(input[4]);
+    Serial.print(" INPUT ARRAY 5:");
+    Serial.println(input[5]);
+    Serial.print(" INPUT ARRAY 6:");
+    Serial.println(input[6]);                    
+    Serial.print(" INPUT ARRAY 7:");
+    Serial.println(input[7]);
 
   }
-  */
-    input_A = SPI.transfer(0);
-    byte state;
-    for(byte i = 0; i<rows; i++){
+    
+  byte state;
+    
+  for(byte i = 0; i<rows; i++){
+
       state = bitRead(input_A,i); 
-      Serial.print((String)"Estado pin " +  i + " : " );
-      Serial.println(state);
-    }
-   Serial.println("Arreglo: 1");
-  //return state;
+      Serial.print((String)"Estado pin " +  input[i] + " : " );
+      Serial.println(input[i]);
+
+  }
+   
+   shiftOut(A_74HC595_14, A_74HC595_11, LSBFIRST, input[0]);
+   digitalWrite(A_74HC595_12, LOW);
+   digitalWrite(A_74HC595_12, HIGH);
+   Serial.print("FILA A : " );
+   Serial.println(input[0]);
+
+   shiftOut(B_74HC595_14, B_74HC595_11, LSBFIRST, input[1]);
+   digitalWrite(B_74HC595_12, LOW);
+   digitalWrite(B_74HC595_12, HIGH);
+   Serial.print("FILA B : " );
+   Serial.println(input[1]);
 
 }
 
 void writeState(){
   
-   shiftOut(_74HC595_14, _74HC595_11, LSBFIRST, input_A);
-   digitalWrite(_74HC595_12, LOW);
-   digitalWrite(_74HC595_12, HIGH);
+   shiftOut(A_74HC595_14, A_74HC595_11, LSBFIRST, input_A);
+   digitalWrite(A_74HC595_12, LOW);
+   digitalWrite(A_74HC595_12, HIGH);
    
 }
 
@@ -114,6 +150,7 @@ void writeState(){
 void setup ()
 {
   SPI.begin ();
+  SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
   Serial.begin (115200);
   Serial.println ("Begin switch test.");
 
@@ -121,10 +158,14 @@ void setup ()
   pinMode (_74HC165_01, OUTPUT);
   digitalWrite (_74HC165_01, HIGH);
 
-  // inicializacion pines chip escritura
-  pinMode(_74HC595_12, OUTPUT);
-  pinMode(_74HC595_11, OUTPUT);
-  pinMode(_74HC595_14, OUTPUT);
+  // inicializacion pines chip A escritura
+  pinMode(A_74HC595_12, OUTPUT);
+  pinMode(A_74HC595_11, OUTPUT);
+  pinMode(A_74HC595_14, OUTPUT);
+  // inicializacion pines chip B escritura
+  pinMode(B_74HC595_12, OUTPUT);
+  pinMode(B_74HC595_11, OUTPUT);
+  pinMode(B_74HC595_14, OUTPUT);
 }
  
 //funcion ciclica Arduino 
@@ -132,6 +173,6 @@ void setup ()
 void loop ()
 {
   readState();
-  writeState();
+  //writeState();
 
 } 
