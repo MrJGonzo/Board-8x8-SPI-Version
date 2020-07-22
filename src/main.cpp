@@ -25,14 +25,15 @@ const byte _74HC165_01 = 7;  // LATCH-- Entrada carga en paralelo. Conecta el pi
 * La conexion en serie de multiples 74LS165 se hace del pin 10 del primer Chip al pin 9 del siguiente Chip sucesivamente.
 */
  
+//Asignacion de pines del 74HC595 que controla la funcion general de escritura 
+const byte LATCH_74HC595_12 = 3; // LATCHPIN-- Seguro del pulso de salida. Conecta el pin 3 de Arduino con el pin 12 del 74HC595. Se comparte en paralelo para todos los 74HC595
+
 //Asignacion de pines del 74HC595 que controla la funcion general de escritura - DATA OUTPUT FILA 0
 const byte A_74HC595_14 = 2; // DATAPIN-- Salida serial. Conecta el pin 2 de Arduino con el pin 14 del 74HC595
-const byte A_74HC595_12 = 3; // LATCHPIN-- Seguro del pulso de salida. Conecta el pin 3 de Arduino con el pin 12 del 74HC595
 const byte A_74HC595_11 = 4; // CLOCKPIN-- Pulso del reloj. Conecta el pin 4 del Arduino con el pin 11 del 74HC595
 
 //Asignacion de pines del 74HC595 que controla la funcion general de escritura - DATA OUTPUT FILA 1
 const byte B_74HC595_14 = 8; // DATAPIN-- Salida serial. Conecta el pin 2 de Arduino con el pin 14 del 74HC595
-const byte B_74HC595_12 = 9; // LATCHPIN-- Seguro del pulso de salida. Conecta el pin 3 de Arduino con el pin 12 del 74HC595
 const byte B_74HC595_11 = 10; // CLOCKPIN-- Pulso del reloj. Conecta el pin 4 del Arduino con el pin 11 del 74HC595
 
 /*
@@ -118,14 +119,12 @@ void readState( ){
   }
    
    shiftOut(A_74HC595_14, A_74HC595_11, LSBFIRST, input[0]);
-   digitalWrite(A_74HC595_12, LOW);
-   digitalWrite(A_74HC595_12, HIGH);
+   digitalWrite(LATCH_74HC595_12, LOW);
+   digitalWrite(LATCH_74HC595_12, HIGH);
    Serial.print("FILA A : " );
    Serial.println(input[0]);
 
    shiftOut(B_74HC595_14, B_74HC595_11, LSBFIRST, input[1]);
-   digitalWrite(B_74HC595_12, LOW);
-   digitalWrite(B_74HC595_12, HIGH);
    Serial.print("FILA B : " );
    Serial.println(input[1]);
 
@@ -134,8 +133,8 @@ void readState( ){
 void writeState(){
   
    shiftOut(A_74HC595_14, A_74HC595_11, LSBFIRST, input_A);
-   digitalWrite(A_74HC595_12, LOW);
-   digitalWrite(A_74HC595_12, HIGH);
+   digitalWrite(LATCH_74HC595_12, LOW);
+   digitalWrite(LATCH_74HC595_12, HIGH);
    
 }
 
@@ -158,18 +157,17 @@ void setup ()
   pinMode (_74HC165_01, OUTPUT);
   digitalWrite (_74HC165_01, HIGH);
 
+  //Pulso Latch en paralelo para el arreglo de chips de escritura
+  pinMode(LATCH_74HC595_12, OUTPUT);
   // inicializacion pines chip A escritura
-  pinMode(A_74HC595_12, OUTPUT);
   pinMode(A_74HC595_11, OUTPUT);
   pinMode(A_74HC595_14, OUTPUT);
   // inicializacion pines chip B escritura
-  pinMode(B_74HC595_12, OUTPUT);
   pinMode(B_74HC595_11, OUTPUT);
   pinMode(B_74HC595_14, OUTPUT);
 }
  
 //funcion ciclica Arduino 
-
 void loop ()
 {
   readState();
