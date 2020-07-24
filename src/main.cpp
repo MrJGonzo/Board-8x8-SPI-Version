@@ -71,14 +71,15 @@ const int pixels = 8; // Cantidad de pixels por fila
 
 #define t 1000 
 
-byte input [pixels] = { B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000 };
+// Almacenamiento de los estados de los chips SPI de sensores-entradas
+byte inputState [pixels] = {  B00000000,
+                              B00000000,
+                              B00000000,
+                              B00000000,
+                              B00000000,
+                              B00000000,
+                              B00000000,
+                              B00000000 };
 
 byte output [pixels] = {B00000000,
                         B00000000,
@@ -89,14 +90,7 @@ byte output [pixels] = {B00000000,
                         B00000000,
                         B00000000 };
 
-byte state [pixels] = { B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000,
-                        B00000000 };
+bool state [pixels] = { 0,0,0,0,0,0,0,0 };
 
 // Arreglo de para los pines del pulso de Reloj de cada chip 74HC595
 byte clockPin [pixels] = {  A_74HC595_11, 
@@ -116,73 +110,12 @@ byte dataPin [pixels] = {   A_74HC595_14,
                             F_74HC595_14,
                             G_74HC595_14  };
 byte input_A;
+String bitValue;
 
 /*
-******************************************** Funciones ********************************************
+******************************************** Funciones de prueba ********************************************
 */
 
-// Escribe el estado a la fila que se le asigne en la funcion ShiftOut
-void ledWrite(){
-
-   digitalWrite(LATCH_74HC595_12, LOW);
-   digitalWrite(LATCH_74HC595_12, HIGH);
-}
-
-// Funcion de lectura del estado de los sensores-interreptures y escritura del estado a cada fila de LEDs
-void readAndWrite( ){
-
-  // Inicializacion del estado de acuerdo con los pulsos requeridos por el chip
-  digitalWrite (_74HC165_01, LOW); 
-  digitalWrite (_74HC165_01, HIGH);
-
-  SPI.setBitOrder(LSBFIRST);
-
-// Recorrido de monitoreo del estado de cada fila de sensores
-// ***** MODIFICAR CON USO DE ARREGLOS **********
-  for(byte i = 0; i < 8; i++){
-
-    input[i] = SPI.transfer(10);
-    Serial.println("SPI.transfer : ");
-    input_A = input[i];
-    Serial.println(input_A);
-    Serial.print(" INPUT ARRAY 0:");
-    Serial.println(byte(input[0]));
-    Serial.print(" INPUT ARRAY 1:");
-    Serial.println(input[1]);
-    Serial.print(" INPUT ARRAY 2:");
-    Serial.println(input[2]);
-    Serial.print(" INPUT ARRAY 3:");
-    Serial.println(input[3]);
-    Serial.print(" INPUT ARRAY 4:");
-    Serial.println(input[4]);
-    Serial.print(" INPUT ARRAY 5:");
-    Serial.println(input[5]);
-    Serial.print(" INPUT ARRAY 6:");
-    Serial.println(input[6]);                    
-    Serial.print(" INPUT ARRAY 7:");
-    Serial.println(input[7]);
-
-  }
-    
-
-  for(byte i = 0; i < 2; i++){
-  byte state;
-      state = bitRead(input_A,i); 
-      Serial.print((String)"Estado pin " +  input[i] + " : " );
-      Serial.println(input[i]);
-
-  }
-
-  // Se asignan los parametros de la funcion ShiftOut a cada puerto de cada chip 74HC595 para la escritura de estado.
-  for(int i = 0; i < 2; i++){
-    
-    shiftOut(dataPin[i], clockPin[i], MSBFIRST, input[i]);
-    Serial.println((String)"FILA " + i + " Estado :" + input[i]);
-    ledWrite(); // Se escribe el estado de la fila de LEDs
-  }
-
-
-}
 
 
 // Funcion general de escritura de estado - Solo para pruebas - 
@@ -193,6 +126,77 @@ void writeState(){
    digitalWrite(LATCH_74HC595_12, HIGH);
    
 }
+
+/*
+******************************************** Funciones revisadas ********************************************
+*/
+
+// Lee y almacena el estado de cada valor entregado por los chips SPI a cada una las filas en el arreglo inputState
+void readStateSPI(){
+
+  for(int i = 0; i < pixels; i++){
+    
+    // Se lee el estado del bus SPI y se almacena en cada posicion del arreglo
+    inputState[i] = SPI.transfer(8);
+    // Imprime el valor decimal de la fila - Se puede usar para la etapa analitica de patrones
+    Serial.println((String)"Bus SPI buffer " + i + " valor decimal :" + inputState[i] );  // Se monitorea el estado de asignacion de cada fila
+    Serial.println((String)"Bus SPI buffer " + i + " valor hexadecimal :" + (inputState[i], HEX) );  // Se monitorea el estado de asignacion de cada fila
+  }   
+    Serial.println(" ");
+}
+
+// Lee bit por bit el estado de cada pixel por filas y lo almacena en el arreglo state
+void readBitState(){
+
+    for(int i = 0; i < pixels; i++){
+
+      Serial.print((String)"Estado bit x bit fila " + i + " : ");
+      
+        for(int j = 0; j < pixels; j++){
+
+            state[i] = bitRead(inputState[i],j);
+            Serial.print((String)state[i]);
+        }
+      
+      Serial.println(" ");
+
+    }
+    
+}
+
+// Escribe el estado a la fila que se le asigne en la funcion ShiftOut
+void ledWrite(){
+
+   digitalWrite(LATCH_74HC595_12, LOW);
+   digitalWrite(LATCH_74HC595_12, HIGH);
+}
+
+
+// Funcion de lectura del estado de los sensores-interreptures y escritura del estado a cada fila de LEDs
+void readAndWrite( ){
+
+  // Inicializacion del estado de acuerdo con los pulsos requeridos por el chip
+  digitalWrite (_74HC165_01, LOW); 
+  digitalWrite (_74HC165_01, HIGH);
+
+  SPI.setBitOrder(LSBFIRST);
+
+// Lectura y asignacion del estado del lector-sensor por fila
+  readStateSPI();
+
+  // Se asignan los parametros de la funcion ShiftOut a cada puerto de cada chip 74HC595 para la escritura de estado.
+  for(int i = 0; i < 2; i++){
+    
+    shiftOut(dataPin[i], clockPin[i], MSBFIRST, inputState[i]);
+    Serial.println((String)"FILA " + i + " Estado :" + inputState[i]);
+
+    ledWrite(); // Se escribe el estado de la fila de LEDs
+  
+  }
+
+
+}
+
 
 /*
 ******************************************** Funciones ejecucion de Arduino ********************************************
@@ -227,5 +231,6 @@ void loop ()
 {
   // Llamado a la funcion de lecto-escritura
   readAndWrite();
+  readBitState();
 
 } 
