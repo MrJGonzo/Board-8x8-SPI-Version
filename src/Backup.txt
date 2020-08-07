@@ -24,7 +24,7 @@ const byte _74HC165_01 = 7;  // LATCH-- Entrada carga en paralelo. Conecta el pi
 * MISO SPI Bus. Conecta el pin 7 del 74LS165 al pin 50 de Arduino Mega 2560 Protocolo SPI
 * La conexion en serie de multiples 74LS165 se hace del pin 10 del primer Chip al pin 9 del siguiente Chip sucesivamente.
 */
-
+ 
 /*  
 * Asignacion de pines del 74HC595 que controla la funcion general de escritura
 */
@@ -109,22 +109,44 @@ byte dataPin [pixels] = {   A_74HC595_14,
                             E_74HC595_14,
                             F_74HC595_14,
                             G_74HC595_14  };
-byte input_A;
-String bitValue;
+
+
 
 /*
 ******************************************** Funciones de prueba ********************************************
 */
 
 
-
 // Funcion general de escritura de estado - Solo para pruebas - 
 void writeState(){
-  
-   shiftOut(A_74HC595_14, A_74HC595_11, LSBFIRST, input_A);
-   digitalWrite(LATCH_74HC595_12, LOW);
-   digitalWrite(LATCH_74HC595_12, HIGH);
+
+  byte input_A = 0B00000000;
+  shiftOut(A_74HC595_14, A_74HC595_11, LSBFIRST, input_A);
+  digitalWrite(LATCH_74HC595_12, LOW);
+  digitalWrite(LATCH_74HC595_12, HIGH);
    
+}
+
+void calculateSum(bool[]){
+
+  // 1) Identifique los bits consecutivos que sean uno, ignore los ceros
+  // 2) Sume los bits unos consecutivos
+
+
+      for(int i = 0; i < sizeof(inputState); i++){
+
+      Serial.print((String)"Estado bit x bit fila " + i + " : ");
+      
+        for(int j = 0; j < sizeof(inputState); j++){
+
+            state[i] = bitRead(inputState[i],j);
+            Serial.print((String)state[i]);
+        }
+      
+      Serial.println(" ");
+
+    }
+
 }
 
 /*
@@ -134,13 +156,13 @@ void writeState(){
 // Lee y almacena el estado de cada valor entregado por los chips SPI a cada una las filas en el arreglo inputState
 void readStateSPI(){
 
-  for(int i = 0; i < pixels; i++){
+  for(int i = 0; i < sizeof(inputState); i++){
     
     // Se lee el estado del bus SPI y se almacena en cada posicion del arreglo
-    inputState[i] = SPI.transfer(8);
+    inputState[i] = SPI.transfer(8); // lectura del bus 8 ciclos
     // Imprime el valor decimal de la fila - Se puede usar para la etapa analitica de patrones
-    Serial.println((String)"Bus SPI buffer " + i + " valor decimal :" + inputState[i] );  // Se monitorea el estado de asignacion de cada fila
-    Serial.println((String)"Bus SPI buffer " + i + " valor hexadecimal :" + (inputState[i], HEX) );  // Se monitorea el estado de asignacion de cada fila
+    Serial.println((String)"Bus SPI buffer " + i + " valor decimal : " + inputState[i] );  // Se monitorea el estado de asignacion de cada fila
+    //Serial.println((String)"Bus SPI buffer " + i + " valor hexadecimal :" + (inputState[i], HEX) );  // Se monitorea el estado de asignacion de cada fila
   }   
     Serial.println(" ");
 }
@@ -148,11 +170,11 @@ void readStateSPI(){
 // Lee bit por bit el estado de cada pixel por filas y lo almacena en el arreglo state
 void readBitState(){
 
-    for(int i = 0; i < pixels; i++){
+    for(int i = 0; i < sizeof(inputState); i++){
 
       Serial.print((String)"Estado bit x bit fila " + i + " : ");
       
-        for(int j = 0; j < pixels; j++){
+        for(int j = 0; j < sizeof(inputState); j++){
 
             state[i] = bitRead(inputState[i],j);
             Serial.print((String)state[i]);
@@ -169,8 +191,8 @@ void ledWrite(){
 
    digitalWrite(LATCH_74HC595_12, LOW);
    digitalWrite(LATCH_74HC595_12, HIGH);
+   
 }
-
 
 // Funcion de lectura del estado de los sensores-interreptures y escritura del estado a cada fila de LEDs
 void readAndWrite( ){
@@ -184,8 +206,8 @@ void readAndWrite( ){
 // Lectura y asignacion del estado del lector-sensor por fila
   readStateSPI();
 
-  // Se asignan los parametros de la funcion ShiftOut a cada puerto de cada chip 74HC595 para la escritura de estado.
-  for(int i = 0; i < 2; i++){
+  // Escribe todos los estados de la matriz. Se le asigna el estado de lectura a cada uno de los chips de escritura. 
+  for(int i = 0; i < 2; i++){ // Se establce en 2 provisionalmente por tener conectados 2 circuitos en el hardware provisionalmente
     
     shiftOut(dataPin[i], clockPin[i], MSBFIRST, inputState[i]);
     Serial.println((String)"FILA " + i + " Estado :" + inputState[i]);
@@ -230,7 +252,7 @@ void setup ()
 void loop ()
 {
   // Llamado a la funcion de lecto-escritura
-  readAndWrite();
-  readBitState();
-
+  //readAndWrite();
+  //readBitState();
+  readStateSPI();
 } 
